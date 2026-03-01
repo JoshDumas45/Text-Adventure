@@ -10,6 +10,9 @@ void Room::Load(std::string _path)
     m_map.clear();
     m_doors.clear();
     m_goblins.clear();
+    
+    Vec2 playerSpawn;
+    bool foundSpawn = false;
 
     std::ifstream file;
     file.open(_path);
@@ -68,25 +71,6 @@ void Room::Load(std::string _path)
     }
 
     int doorCount = 0;
-    // Spawns goblins
-    int goblinsToSpawn = 1;
-    for (int i = 0; i < goblinsToSpawn; i++)
-    {
-        while (true)
-        {
-            int x = rand() % m_map[0].size();
-            int y = rand() % m_map.size();
-
-            if (m_map[y][x] == ' ')
-            {
-                Goblin* g = new Goblin();
-                g->Start(Vec2(x, y));
-                m_goblins.push_back(g);
-
-                break;
-            }
-        }
-    }
 
     for (int y = 0; y < m_map.size(); y++)
     {
@@ -94,10 +78,18 @@ void Room::Load(std::string _path)
         {
             if (m_map[y][x] == 'S')
             {
-                if (m_player == nullptr)
-                    m_player = new Player();
+                playerSpawn = Vec2(x,y);
+                foundSpawn = true;
                 
-                m_player->Start(Vec2(x,y));
+                if (m_player == nullptr)
+                {
+                    m_player = new Player();
+                    m_player->Start(Vec2(x,y));
+                }
+                else
+                {
+                    m_player->SetPosition(Vec2(x,y));
+                }
                 m_map[y][x] = ' ';
             }
 
@@ -112,23 +104,45 @@ void Room::Load(std::string _path)
             }
         }
     }
+
+    // Spawns goblins
+    int goblinsToSpawn = 1;
+    for (int i = 0; i < goblinsToSpawn; i++)
+    {
+        while (true)
+        {
+            int x = rand() % m_map[0].size();
+            int y = rand() % m_map.size();
+
+            if (m_map[y][x] == ' ' && Vec2(x, y) != playerSpawn)
+            {
+                Goblin* g = new Goblin();
+                g->Start(Vec2(x, y));
+                m_goblins.push_back(g);
+                break;
+            }
+        }
+    }
 }
 
 void Room::Update()
 {
     Draw();
+
     if (m_player != nullptr)
     {
         m_player->room = this;
         m_player->Update();
 
-        for (auto g : m_goblins)
+        if (m_player->hasMovedThisTurn)
         {
-            g->MoveTowardsPlayer(m_player->GetPosition(), m_map);
-            // If the goblin walks into the player start fight
-            if (g->GetPosition() == m_player->GetPosition())
+            for (auto g : m_goblins)
             {
-                m_player->Fight(g);
+                g->MoveTowardsPlayer(m_player->GetPosition(), m_map);
+                if (g->GetPosition() == m_player->GetPosition())
+                {
+                    m_player->Fight(g);
+                }
             }
         }
     }
@@ -209,7 +223,14 @@ void Room::OpenDoor(Vec2 _pos)
     {
         if (m_doors[i].pos == _pos)
         {
+            // Opens Shop
+            if (m_player != nullptr)
+            {
+                m_player->OpenShop();
+            }
+
             Load(m_doors[i].path.c_str());
+
         }
     }
 }

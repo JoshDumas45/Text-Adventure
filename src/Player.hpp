@@ -12,8 +12,13 @@ public:
     int health = 0;
     int attack = 0;
     int gold = 0;
+    int maxHealth = 0;
 
     void Fight(Goblin* enemy);
+
+    void OpenShop();
+
+    bool hasMovedThisTurn = false;
 
 private:
     int m_keyCount = 0;

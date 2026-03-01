@@ -17,6 +17,7 @@ public:
     void ClearLocation(Vec2 _pos);
     void OpenDoor(Vec2 _pos);
     const std::vector<Goblin*>& GetGoblins() const { return m_goblins; }
+
 private:
     std::vector<Entity*> m_entities;
     Player* m_player = nullptr;
