@@ -109,7 +109,29 @@ void Room::Draw()
     {
         for (int x = 0; x < m_map[y].size(); x++)
         {
-            printf("%c ", GetLocation(Vec2(x, y)));
+            // Print map characters in different colors based on what they represent
+            /* ANSI Color Codes
+            Black = 30
+            Red = 31
+            Green = 32
+            Yellow = 33
+            Blue = 34
+            Magenta = 35
+            Cyan = 36
+            White = 37
+            */
+            char c = GetLocation(Vec2(x, y));
+
+             switch(c)
+            {
+                case '#': printf("\033[1;34m%c \033[0m", c); break;
+                case 'P': printf("\033[1;32m%c \033[0m", c); break;
+                case 'G': printf("\033[1;31m%c \033[0m", c); break;
+                case 'K': printf("\033[1;33m%c \033[0m", c); break;
+                case 'D': printf("\033[1;35m%c \033[0m", c); break;
+                case 'L': printf("\033[1;37m%c \033[0m", c); break;
+                default:  printf("%c ", c); break;
+            }
         }
         printf("\n");
     }
