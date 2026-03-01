@@ -17,7 +17,7 @@ struct RollStats
     int total = 0;
 };
 
-RollStats RollDice(std::vector<Die> _dice)
+inline RollStats RollDice(std::vector<Die> _dice)
 {
     RollStats stats = {};
 

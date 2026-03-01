@@ -9,6 +9,7 @@ void Room::Load(std::string _path)
 {
     m_map.clear();
     m_doors.clear();
+    m_goblins.clear();
 
     std::ifstream file;
     file.open(_path);
@@ -67,6 +68,26 @@ void Room::Load(std::string _path)
     }
 
     int doorCount = 0;
+    // Spawns goblins
+    int goblinsToSpawn = 1;
+    for (int i = 0; i < goblinsToSpawn; i++)
+    {
+        while (true)
+        {
+            int x = rand() % m_map[0].size();
+            int y = rand() % m_map.size();
+
+            if (m_map[y][x] == ' ')
+            {
+                Goblin* g = new Goblin();
+                g->Start(Vec2(x, y));
+                m_goblins.push_back(g);
+
+                break;
+            }
+        }
+    }
+
     for (int y = 0; y < m_map.size(); y++)
     {
         for (int x = 0; x < m_map[y].size(); x++)
@@ -100,6 +121,16 @@ void Room::Update()
     {
         m_player->room = this;
         m_player->Update();
+
+        for (auto g : m_goblins)
+        {
+            g->MoveTowardsPlayer(m_player->GetPosition(), m_map);
+            // If the goblin walks into the player start fight
+            if (g->GetPosition() == m_player->GetPosition())
+            {
+                m_player->Fight(g);
+            }
+        }
     }
 }
 
@@ -121,6 +152,15 @@ void Room::Draw()
             White = 37
             */
             char c = GetLocation(Vec2(x, y));
+
+            for (auto g : m_goblins)
+            {
+                if (g->GetPosition() == Vec2(x, y))
+                {
+                    c = g->Draw();
+                    break;
+                }
+            }
 
              switch(c)
             {
