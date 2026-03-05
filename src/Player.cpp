@@ -14,10 +14,31 @@ void Player::Start(Vec2 _pos) {
     health = maxHealth;
 }
 
+void Player::GainXP(int amount)
+{
+    experience += amount;
+
+    int xpToLevel = level * 10;
+
+    if (experience >= xpToLevel)
+    {
+        experience -= xpToLevel;
+        level++;
+
+        maxHealth += 5;
+        attack += 1;
+        health = maxHealth;
+
+        printf("\n!!!LEVEL UP!!! You are now level %d\n", level);
+        printf("Max HP and Attack increased\n\n");
+    }
+}
+
 void Player::Update() {
     //while(request_char("hit w to continue: ") != 'w') {}
     // Show player stats
-    printf("HP: %d/%d  GOLD: %d\n", health, maxHealth, gold);
+    printf("PLAYER  HP: %d/%d  ATTACK: %d  GOLD: %d\n", health, maxHealth, attack, gold);
+    printf("LEVEL: %d  XP: %d\n", level, experience);
 
     char directionInput;
 
@@ -51,12 +72,44 @@ void Player::Update() {
 
     Vec2 tryPos = m_position + direction;
 
+    if (room->GetLocation(tryPos) == 'C')
+    {
+        printf("You found a treasure chest!\n");
+
+        gold += random_int(5, 15);
+        printf("You gained gold!\n");
+
+        if (random_int(1,100) <= 50)
+        {
+            printf("You found a key inside!\n");
+            m_keyCount++;
+        }
+
+        room->ClearLocation(tryPos);
+    }
+
     // fight detection
     for (auto g : room->GetGoblins())
     {
         if (g->GetPosition() == tryPos)
         {
-            Fight(g);
+            FightGoblin(g);
+            return;
+        }
+    }
+    for (auto f : room->GetFrogs())
+    {
+        if (f->GetPosition() == tryPos)
+        {
+            FightFrog(f);
+            return;
+        }
+    }
+    for (auto s : room->GetSpikes())
+    {
+        if (s->GetPosition() == tryPos)
+        {
+            health -= 3;
             return;
         }
     }
@@ -81,13 +134,20 @@ void Player::Update() {
 }
 
 // Fight system for goblin
-void Player::Fight(Goblin* enemy)
+void Player::FightGoblin(Goblin* enemy)
 {
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
+
+    printf("Goblin Fight\n\n");
     while (health > 0 && enemy->health > 0)
     {
         // Display stats
-        printf("PLAYER  HP: %d/%d  GOLD: %d\n", health, maxHealth, gold);
-        printf("ENEMY   HP: %d\n", enemy->health);
+        printf("PLAYER  HP: %d/%d  ATTACK: %d  GOLD: %d\n", health, maxHealth, attack, gold);;
+        printf("ENEMY   HP: %d     ATTACK: 1\n", enemy->health);
 
         char input = request_char("Press 'a' to attack");
         if (input == 'a')
@@ -95,7 +155,7 @@ void Player::Fight(Goblin* enemy)
             // Attack: Rolls 1 6 sided dice + 3
             std::vector<Die> playerDice = { {6} };
             RollStats playerStats = RollDice(playerDice);
-            int playerDamage = playerStats.total + 3 + attack;
+            int playerDamage = playerStats.total + attack;
             enemy->health -= playerDamage;
 
             printf("\nYou rolled a %d and hit the enemy for %d damage!\n", playerStats.total, playerDamage);
@@ -122,6 +182,68 @@ void Player::Fight(Goblin* enemy)
     {
         printf("You defeated the enemy! You gained %d gold!\n", enemy->goldReward);
         gold += enemy->goldReward;
+        GainXP(5);
+        enemy->SetPosition(Vec2(-1, -1)); // remove from map
+    }
+    else
+    {
+        printf("You died! Gold collected: %d\n", gold);
+        exit(0);
+    }
+
+    request_char("Press Enter to continue...");
+}
+
+// Fight system for Frogs
+void Player::FightFrog(Frog* enemy)
+{
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
+
+    printf("Frog Fight\n\n");
+    while (health > 0 && enemy->health > 0)
+    {
+        // Display stats
+        printf("PLAYER  HP: %d/%d  ATTACK: %d  GOLD: %d\n", health, maxHealth, attack, gold);
+        printf("ENEMY   HP: %d     ATTACK: 2\n", enemy->health);
+
+        char input = request_char("Press 'a' to attack");
+        if (input == 'a')
+        {   
+            // Attack: Rolls 1 6 sided dice + 3
+            std::vector<Die> playerDice = { {6} };
+            RollStats playerStats = RollDice(playerDice);
+            int playerDamage = playerStats.total + attack;
+            enemy->health -= playerDamage;
+
+            printf("\nYou rolled a %d and hit the enemy for %d damage!\n", playerStats.total, playerDamage);
+
+            if (enemy->health > 0)
+            {
+                // Attack: Rolls 1 4 sided dice + 2
+                std::vector<Die> enemyDice = { {4} };
+                RollStats enemyStats = RollDice(enemyDice);
+                int enemyDamage = enemyStats.total + 2;
+                health -= enemyDamage;
+
+                printf("Enemy rolled a %d and hit you for %d damage!\n\n", enemyStats.total, enemyDamage);
+            }
+        }
+        else
+        {
+            printf("\nWrong button press 'a' to attack\n");
+        }
+    }
+
+    // Fight ended
+    if (health > 0)
+    {
+        printf("You defeated the enemy! You gained %d gold!\n", enemy->goldReward);
+        gold += enemy->goldReward;
+        GainXP(5);
         enemy->SetPosition(Vec2(-1, -1)); // remove from map
     }
     else
@@ -150,7 +272,7 @@ void Player::OpenShop()
         printf("Gold: %d\n\n", gold);
 
         printf("1) +5 Max Health (10 gold)\n");
-        printf("2) Increase Attack (15 gold)(current attack bonus +%d)\n", attack);
+        printf("2) Increase Attack (15 gold)(current attack %d)\n", attack);
         printf("3) Heal 10 HP (5 gold)\n");
         printf("4) Continue\n");
 
